@@ -1,0 +1,34 @@
+name: Build Bazel
+
+on:
+  push:
+    branches: [ fix-sbom/7.2.0 ]
+  pull_request:
+
+jobs:
+  build-bazel:
+    runs-on: ubuntu-latest
+    steps:
+      # 1) Récupère les sources du dépôt
+      - name: Check out repository
+        uses: actions/checkout@v3
+        with:
+          ref: fix-sbom/7.2.0
+
+      # 2) Installe Bazel via l'action bazel-contrib/setup-bazel
+      - name: Set up Bazel
+        uses: bazel-contrib/setup-bazel@0.12.1
+        env:
+          USE_BAZEL_VERSION: "7.2.0"
+      # 3) Compile le fork de Bazel depuis les sources
+      - name: Build Bazel from source
+        run: |
+          bazel --version
+          bazel build //src:bazel
+
+      # 4) Publier le binaire compilé
+      - name: Upload Bazel binary
+        uses: actions/upload-artifact@v3
+        with:
+          name: bazel
+          path: bazel-bin/src/bazel
