@@ -1,0 +1,47 @@
+name: Build Bazel
+
+on:
+  push:
+    branches: [ fix-sbom/7.2.0 ]
+  pull_request:
+
+jobs:
+  build-bazel:
+    runs-on: ubuntu-latest
+    container:
+      image: fedora:35
+    steps:
+      - name: check ldd version
+        run: ldd --version
+
+      - name: Check out repository
+        uses: actions/checkout@v3
+        with:
+          ref: fix-sbom/7.2.0
+
+      - name: Dependencies installation
+        run: |
+          dnf update -y
+          dnf install -y gcc gcc-c++ make curl zip findutils unzip which tar
+
+      - name: Bazel installation
+        run: |
+          curl -L -o bazel-installer.sh https://github.com/bazelbuild/bazel/releases/download/7.1.1/bazel-7.1.1-installer-linux-x86_64.sh
+          chmod +x bazel-installer.sh
+          ./bazel-installer.sh --user
+          echo "$HOME/bin" >> $GITHUB_PATH
+
+          #- name: Set up Bazel
+          #uses: bazel-contrib/setup-bazel@0.12.1
+          #env:
+          #USE_BAZEL_VERSION: "7.2.0"
+      
+      - name: Build Bazel from source
+        run: |
+          bazel build //src:bazel --compilation_mode=opt --strip=always --stamp --embed_label=7.2.0
+
+      - name: Upload Bazel binary
+        uses: actions/upload-artifact@v4
+        with:
+          name: bazel
+          path: bazel-bin/src/bazel
